@@ -13,7 +13,7 @@ exports.userSignUp = async (req, res) => {
       email: email,
     });
     if (savedemail) {
-      return res.send({ status: 1, message: "email is already in use" });
+      return failResponse(res, null, 400, "email already in use");
     }
 
     //hash the password using bcryptjs library
@@ -40,7 +40,7 @@ exports.userSignUp = async (req, res) => {
     };
     sucessResponse(res, dataToSend, 200, "User registered successfully");
   } catch (error) {
-    console.log(error.message);
+    failResponse(res, null, 400, error.message);
   }
 };
 
@@ -48,14 +48,15 @@ exports.userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
-    if (!user) return res.send({ message: "email is incorrect" });
+    if (!user) return failResponse(res, null, 400, "email is incorrect");
 
     const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass) return res.send({ message: "invalid password" });
+    if (!validPass)
+      return failResponse(res, null, 400, "please check the password");
 
     const userTo = {
       useremail: email,
-      role: createdUser.role,
+      role: user.role,
     };
 
     // creating the jwt token
@@ -68,6 +69,6 @@ exports.userLogin = async (req, res) => {
     sucessResponse(res, dataToSend, 200, "User Logged in successfully");
   } catch (error) {
     // errorResponse(res, error);
-    res.send(error);
+    failResponse(res, null, 400, error.message);
   }
 };
