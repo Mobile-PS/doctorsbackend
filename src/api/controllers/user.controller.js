@@ -53,7 +53,7 @@ exports.userLogin = async (req, res) => {
     if (!user) return failResponse(res, null, 400, "email is incorrect");
 
     const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass)
+    if (!validPass && !phoneNumber)
       return failResponse(res, null, 400, "please check the password");
 
     const userTo = {
