@@ -8,12 +8,12 @@ const { jwtSecret } = require("../../config/vars");
 
 exports.userSignUp = async (req, res) => {
   try {
-    const { name, email, password, mobile, role } = req.body;
+    const { name, email, password, phoneNumber, role } = req.body;
     const savedemail = await User.findOne({
-      email: email,
+      $or: [{ email: email }, { mobile: phoneNumber }],
     });
     if (savedemail) {
-      return failResponse(res, null, 400, "email already in use");
+      return failResponse(res, null, 400, "email or phone already in use");
     }
 
     //hash the password using bcryptjs library
@@ -24,7 +24,7 @@ exports.userSignUp = async (req, res) => {
     const createdUser = await User.create({
       name: name,
       email: email,
-      mobile: mobile,
+      mobile: phoneNumber,
       password: hashPassword,
       role: role,
     });
@@ -46,8 +46,10 @@ exports.userSignUp = async (req, res) => {
 
 exports.userLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email: email });
+    const { email, password, phoneNumber } = req.body;
+    const user = await User.findOne({
+      $or: [{ email: email }, { mobile: phoneNumber }],
+    });
     if (!user) return failResponse(res, null, 400, "email is incorrect");
 
     const validPass = await bcrypt.compare(password, user.password);
