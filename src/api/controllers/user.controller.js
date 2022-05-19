@@ -66,10 +66,8 @@ exports.userSignUp = async (req, res) => {
     }
 
     //hash the password using bcryptjs library
-
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-
     const createdUser = await User.create({
       name: name,
       email: email,
@@ -97,9 +95,17 @@ exports.userSignUp = async (req, res) => {
 exports.userLogin = async (req, res) => {
   try {
     const { email, password, phoneNumber, social_plateform, name } = req.body;
-    const user = await User.findOne({
-      $or: [{ email: email }, { mobile: phoneNumber }],
-    });
+    let user;
+    if (phoneNumber) {
+      user = await User.findOne({
+        mobile: phoneNumber,
+      });
+    } else {
+      user = await User.findOne({
+        email: email,
+      });
+    }
+
     if (social_plateform != "manual" && !user) {
       const createdUser = await User.create({
         name: name,
@@ -156,13 +162,11 @@ exports.userLogin = async (req, res) => {
         );
       }
     }
-    if (!password.trim()) {
+    if (!password.trim() && !phoneNumber) {
       return failResponse(res, null, 400, "please check the password");
     }
-    console.log(password);
     const validPass = await bcrypt.compare(password, user.password);
-    console.log(validPass);
-    if (!validPass) {
+    if (!validPass && !phoneNumber) {
       return failResponse(res, null, 400, "please check the password");
     }
 
