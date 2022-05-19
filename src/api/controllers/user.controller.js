@@ -158,7 +158,7 @@ exports.userLogin = async (req, res) => {
           res,
           null,
           400,
-          "Invalid social plateform selected"
+          "Email already exist withh different account"
         );
       }
     }
