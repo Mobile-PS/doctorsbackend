@@ -96,10 +96,34 @@ exports.userSignUp = async (req, res) => {
 
 exports.userLogin = async (req, res) => {
   try {
-    const { email, password, phoneNumber, social_plateform } = req.body;
+    const { email, password, phoneNumber, social_plateform, name } = req.body;
     const user = await User.findOne({
       $or: [{ email: email }, { mobile: phoneNumber }],
     });
+    if (social_plateform != "manual" && !user) {
+      const createdUser = await User.create({
+        name: name,
+        email: email,
+        social_plateform: social_plateform,
+        password: "",
+      });
+      const userTo = {
+        useremail: email,
+        role: createdUser.role,
+      };
+      const accessToken = jwt.sign(userTo, jwtSecret);
+      const dataToSend = {
+        email: createdUser.email,
+        name: createdUser.name,
+        token: accessToken,
+      };
+      return sucessResponse(
+        res,
+        dataToSend,
+        200,
+        "User registered successfully"
+      );
+    }
     if (!user)
       return failResponse(res, null, 400, "Please check your phone or email");
 
