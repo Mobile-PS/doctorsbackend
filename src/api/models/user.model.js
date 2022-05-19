@@ -21,9 +21,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
-      minlength: 6,
-      maxlength: 128,
     },
     name: {
       type: String,
@@ -31,9 +28,8 @@ const userSchema = new mongoose.Schema(
       index: true,
       trim: true,
     },
-    services: {
-      facebook: String,
-      google: String,
+    social_plateform: {
+      type: String,
     },
     role: {
       type: String,

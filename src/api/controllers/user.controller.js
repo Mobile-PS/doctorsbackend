@@ -8,7 +8,53 @@ const { jwtSecret } = require("../../config/vars");
 
 exports.userSignUp = async (req, res) => {
   try {
-    const { name, email, password, phoneNumber, role } = req.body;
+    const { name, email, password, phoneNumber, role, social_plateform } =
+      req.body;
+    if (social_plateform != "manual") {
+      const savedemail = await User.findOne({
+        email: email,
+      });
+      if (savedemail) {
+        const userTo = {
+          useremail: email,
+          role: savedemail.role,
+        };
+        const accessToken = jwt.sign(userTo, jwtSecret);
+        const dataToSend = {
+          email: savedemail.email,
+          name: savedemail.name,
+          token: accessToken,
+        };
+        return sucessResponse(
+          res,
+          dataToSend,
+          200,
+          "User logged in successfully"
+        );
+      }
+      const createdUser = await User.create({
+        name: name,
+        email: email,
+        social_plateform: social_plateform,
+        password: "",
+      });
+      const userTo = {
+        useremail: email,
+        role: createdUser.role,
+      };
+      const accessToken = jwt.sign(userTo, jwtSecret);
+      const dataToSend = {
+        email: createdUser.email,
+        name: createdUser.name,
+        token: accessToken,
+      };
+      return sucessResponse(
+        res,
+        dataToSend,
+        200,
+        "User registered successfully"
+      );
+    }
     if (!password.trim()) {
       return failResponse(res, null, 400, "must enter a valid password");
     }
@@ -30,6 +76,7 @@ exports.userSignUp = async (req, res) => {
       mobile: phoneNumber,
       password: hashPassword,
       role: role,
+      social_plateform: social_plateform,
     });
     const userTo = {
       useremail: email,
@@ -41,23 +88,20 @@ exports.userSignUp = async (req, res) => {
       name: name,
       token: accesToken,
     };
-    sucessResponse(res, dataToSend, 200, "User registered successfully");
+    return sucessResponse(res, dataToSend, 200, "User registered successfully");
   } catch (error) {
-    failResponse(res, null, 400, error.message);
+    return failResponse(res, null, 400, error.message);
   }
 };
 
 exports.userLogin = async (req, res) => {
   try {
-    const { email, password, phoneNumber } = req.body;
+    const { email, password, phoneNumber, social_plateform } = req.body;
     const user = await User.findOne({
       $or: [{ email: email }, { mobile: phoneNumber }],
     });
-    if (!user) return failResponse(res, null, 400, "email is incorrect");
-
-    const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass && !phoneNumber)
-      return failResponse(res, null, 400, "please check the password");
+    if (!user)
+      return failResponse(res, null, 400, "Please check your phone or email");
 
     const userTo = {
       useremail: email,
@@ -71,9 +115,35 @@ exports.userLogin = async (req, res) => {
       name: user.name,
       token: accessToken,
     };
-    sucessResponse(res, dataToSend, 200, "User Logged in successfully");
+    if (social_plateform != "manual") {
+      if (social_plateform == user.social_plateform) {
+        return sucessResponse(
+          res,
+          dataToSend,
+          200,
+          "User Logged in successfully"
+        );
+      } else {
+        return failResponse(
+          res,
+          null,
+          400,
+          "Invalid social plateform selected"
+        );
+      }
+    }
+    if (!password.trim()) {
+      return failResponse(res, null, 400, "please check the password");
+    }
+    console.log(password);
+    const validPass = await bcrypt.compare(password, user.password);
+    console.log(validPass);
+    if (!validPass) {
+      return failResponse(res, null, 400, "please check the password");
+    }
+
+    return sucessResponse(res, dataToSend, 200, "User Logged in successfully");
   } catch (error) {
-    // errorResponse(res, error);
-    failResponse(res, null, 400, error.message);
+    return failResponse(res, null, 400, error.message);
   }
 };
