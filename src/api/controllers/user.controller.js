@@ -9,6 +9,9 @@ const { jwtSecret } = require("../../config/vars");
 exports.userSignUp = async (req, res) => {
   try {
     const { name, email, password, phoneNumber, role } = req.body;
+    if (!password.trim()) {
+      return failResponse(res, null, 400, "must enter a valid password");
+    }
     const savedemail = await User.findOne({
       $or: [{ email: email }, { mobile: phoneNumber }],
     });
