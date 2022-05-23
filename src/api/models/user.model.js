@@ -9,7 +9,7 @@ const roles = ["user", "doctor"];
  * User Schema
  * @private
  */
-const userSchema = new mongoose.Schema(
+const doctorSchema = new mongoose.Schema(
   {
     email: {
       type: String,
@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: roles,
-      default: "user",
+      default: "doctor",
     },
     mobile: {
       type: Number,
@@ -46,4 +46,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("Doctor", doctorSchema);

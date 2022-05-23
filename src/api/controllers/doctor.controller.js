@@ -1,17 +1,19 @@
 const httpStatus = require("http-status");
 const { omit } = require("lodash");
-const User = require("../models/user.model");
+const Doctor = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { sucessResponse, failResponse } = require("../utils/responceHandler");
 const { jwtSecret } = require("../../config/vars");
+const { sendEmail } = require("../services/emails/emailProvider");
+const Otp = require("../models/passwordResetToken.model");
 
 exports.userSignUp = async (req, res) => {
   try {
     const { name, email, password, phoneNumber, role, social_plateform } =
       req.body;
     if (social_plateform != "manual") {
-      const savedemail = await User.findOne({
+      const savedemail = await Doctor.findOne({
         email: email,
       });
       if (savedemail) {
@@ -32,7 +34,7 @@ exports.userSignUp = async (req, res) => {
           "User logged in successfully"
         );
       }
-      const createdUser = await User.create({
+      const createdUser = await Doctor.create({
         name: name,
         email: email,
         social_plateform: social_plateform,
@@ -58,7 +60,7 @@ exports.userSignUp = async (req, res) => {
     if (!password.trim()) {
       return failResponse(res, null, 400, "must enter a valid password");
     }
-    const savedemail = await User.findOne({
+    const savedemail = await Doctor.findOne({
       $or: [{ email: email }, { mobile: phoneNumber }],
     });
     if (savedemail) {
@@ -68,7 +70,7 @@ exports.userSignUp = async (req, res) => {
     //hash the password using bcryptjs library
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-    const createdUser = await User.create({
+    const createdUser = await Doctor.create({
       name: name,
       email: email,
       mobile: phoneNumber,
@@ -97,17 +99,17 @@ exports.userLogin = async (req, res) => {
     const { email, password, phoneNumber, social_plateform, name } = req.body;
     let user;
     if (phoneNumber) {
-      user = await User.findOne({
+      user = await Doctor.findOne({
         mobile: phoneNumber,
       });
     } else {
-      user = await User.findOne({
+      user = await Doctor.findOne({
         email: email,
       });
     }
 
     if (social_plateform != "manual" && !user) {
-      const createdUser = await User.create({
+      const createdUser = await Doctor.create({
         name: name,
         email: email,
         social_plateform: social_plateform,
@@ -158,7 +160,7 @@ exports.userLogin = async (req, res) => {
           res,
           null,
           400,
-          "Email already exist withh different account"
+          "Email already exist with different account"
         );
       }
     }
@@ -171,6 +173,83 @@ exports.userLogin = async (req, res) => {
     }
 
     return sucessResponse(res, dataToSend, 200, "User Logged in successfully");
+  } catch (error) {
+    return failResponse(res, null, 400, error.message);
+  }
+};
+
+/*****************
+FORGOT PASSWORD
+******************/
+
+exports.passwordChangeEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await Doctor.findOne({ email });
+    if (!user) {
+      return failResponse(
+        res,
+        null,
+        400,
+        "User not found please try with correct email"
+      );
+    }
+    const otp = Math.floor(Math.random(4) * 10000);
+    let currentTime = new Date();
+    var expiryTime = new Date(currentTime.getTime() + 30 * 60000);
+
+    const otpDocument = await Otp.create({
+      otp,
+      email,
+      expiresAt: expiryTime,
+    });
+    const result = await sendEmail(email, otp);
+    return sucessResponse(
+      res,
+      result,
+      200,
+      "Kindly check your email for the otp"
+    );
+  } catch (error) {
+    return failResponse(res, null, 400, error.message);
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { otp, email, password } = req.body;
+
+    let currentTime = new Date().getTime();
+    const savedOtp = await Otp.findOne({
+      otp,
+      email,
+    });
+    console.log(savedOtp);
+    if (!savedOtp) {
+      return failResponse(
+        res,
+        null,
+        400,
+        "Could not verify otp please try again"
+      );
+    }
+    if (savedOtp.expiresAt < currentTime) {
+      return failResponse(res, null, 400, "Otp timeout");
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(password, salt);
+    const updatedUser = await Doctor.findOneAndUpdate(
+      { email: email },
+      {
+        password: hashPassword,
+      }
+    );
+    const dataToSend = {
+      email: updatedUser.email,
+      name: updatedUser.name,
+    };
+    const deletedOtp = await Otp.findOneAndDelete({ otp, email });
+    return sucessResponse(res, dataToSend, 200, "Password updated sucessfully");
   } catch (error) {
     return failResponse(res, null, 400, error.message);
   }
