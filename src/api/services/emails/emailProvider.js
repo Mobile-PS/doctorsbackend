@@ -1,6 +1,7 @@
 const Email = require("email-templates");
 const nodemailer = require("nodemailer");
 const { emailConfig } = require("../../../config/vars");
+const logger = require("../../../config/logger");
 
 exports.sendEmail = async (email, otp) => {
   try {
@@ -27,8 +28,10 @@ exports.sendEmail = async (email, otp) => {
     };
     await transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
+        logger.info(error);
         return error;
       } else {
+        logger.info(info.response);
         return info.response;
       }
     });
