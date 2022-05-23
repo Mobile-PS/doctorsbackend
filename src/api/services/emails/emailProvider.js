@@ -7,8 +7,8 @@ exports.sendEmail = async (email, otp) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: emailConfig.username,
-        pass: emailConfig.password,
+        user: "labhi873@gmail.com",
+        pass: "9535823323",
       },
       secure: false, // upgrades later with STARTTLS -- change this based on the PORT
     });
