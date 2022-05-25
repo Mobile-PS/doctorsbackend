@@ -8,8 +8,8 @@ exports.sendEmail = async (email, otp) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "labhi873@gmail.com",
-        pass: "9535823323",
+        user: "suppdoctor08@gmail.com",
+        pass: "Doctor@123",
       },
       secure: false, // upgrades later with STARTTLS -- change this based on the PORT
     });
@@ -21,10 +21,10 @@ exports.sendEmail = async (email, otp) => {
       }
     });
     const mailOptions = {
-      from: "labhi873@gmail.com",
+      from: "suppdoctor08@gmail.com",
       to: email,
-      subject: "sending email using nodemailer",
-      text: `Your otp to reset the password is ${otp}`,
+      subject: "Hey there here is your OTP ",
+      text: `Your OTP is ${otp}`,
     };
     await transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
